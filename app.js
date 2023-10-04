@@ -8,7 +8,7 @@ const sequelize = require('./util/database.js')
 
 //importing models
 const Doctor=require('./models/doctor.js')
-const Patient=require('./models/patient.js')
+const User=require('./models/user.js')
 const Appointment=require('./models/appointment.js')
 
 
@@ -32,8 +32,8 @@ app.use(pageNotFoundMiddleware)
 Doctor.hasMany(Appointment)
 Appointment.belongsTo(Doctor)
 
-Patient.hasMany(Appointment)
-Appointment.belongsTo(Patient)
+User.hasMany(Appointment)
+Appointment.belongsTo(User)
 
 
 

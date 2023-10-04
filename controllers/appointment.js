@@ -1,18 +1,18 @@
 const Appointment = require('../models/appointment')
 const Doctor = require('../models/doctor')
-const Patient=require('../models/patient')
+const User = require('../models/user')
 
 
 
-exports.getPatientsAppointment = async (req, res, next) => {
+exports.getUsersAppointments = async (req, res, next) => {
 
     try {
-        
-        console.log('Inside getPatientsAppointment controller')
 
-        const patient=await Patient.findByPk(req.query.patientId)
-        
-        const appointments = await patient.getAppointments()
+        console.log('Inside getUsersAppointment controller')
+
+        const user = req.user;
+
+        const appointments = await user.getAppointments()
         res.status(200).json({ success: 'true', appointments: appointments })
 
     } catch (err) {
@@ -22,25 +22,25 @@ exports.getPatientsAppointment = async (req, res, next) => {
 
 
 exports.postBookAppointment = async (req, res, next) => {
-    
+
     try {
 
-        const { date, time, patientId, doctorId } = req.body;
-        const patient=await Patient.findByPk(patientId)
-        const doctor=await Doctor.findByPk(doctorId)
+        const { date, time, doctorId } = req.body;
 
-        //if either patient or doctor does not exists then
-        if(!patient || !doctor){
-            return res.status(400).json({success:'false',message:'either patient or doctor does not exist'})
+        const doctor = await Doctor.findByPk(doctorId)
+
+        //if doctor does not exists then
+        if (!doctor) {
+            return res.status(400).json({ success: 'false', message: 'doctor does not exist' })
         }
 
-        await Appointment.create({
+        await req.user.createAppointment({
             date: date,
             time: time,
             status: 'pending',
-            patientId: patientId,
             doctorId: doctorId
         })
+
 
         res.status(200).json({ success: 'true', message: 'appointment scheduled' })
 
@@ -54,8 +54,14 @@ exports.postCancelAppointment = async (req, res, next) => {
 
     try {
 
-        const appointmentId=req.body.appointmentId;
-        await Appointment.update({status:'cancelled'},{where:{id:appointmentId}})
+        const appointmentId = req.body.appointmentId;
+        const appointments = await req.user.getAppointments({ where: { id: appointmentId } })
+
+        if (appointments[0]) {
+            await Appointment.update({ status: 'cancelled' }, { where: { id: appointmentId } })
+        } else {
+            return res.status(400).json({ success: 'false', message: 'cannot find appointment' })
+        }
 
         res.status(200).json({ success: 'true', message: 'appointment cancelled' })
 

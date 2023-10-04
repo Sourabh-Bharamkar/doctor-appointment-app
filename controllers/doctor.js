@@ -1,33 +1,50 @@
 const { Op } = require("sequelize");
 
-const Patient = require('../models/patient')
+const User = require('../models/user')
 const Doctor = require('../models/doctor');
 const Appointment = require('../models/appointment');
+const jwt = require('jsonwebtoken')
 
+
+function generateAccessToken(id, name) {
+    return jwt.sign({ doctorId: id, name: name }, 'SSB16')
+}
 
 
 exports.postDoctorRegistration = async (req, res, next) => {
+
     try {
 
         console.log('Inside postDoctorRegistration controller')
-        const { name,email,phone, speciality, location, maxPatientsPerDay } = req.body;
+        const { name, email, phone, speciality, location, maxPatientsPerDay } = req.body;
         console.log(req.body)
 
-        await Doctor.create({
+        //check whether any doctor exists with same credentials
+        const doctorWithSameEmailOrPhone = await Doctor.findOne({ where: { [Op.or]: [{ email: email }, { phone: phone }] } })
+
+        if (doctorWithSameEmailOrPhone) {
+            return res.status(200).json({ success: true, message: 'doctor already exists with same email or phone' })
+        }
+
+
+        const doctor = await Doctor.create({
             name: name,
-            email:email,
-            phone:phone,
+            email: email,
+            phone: phone,
             location: location,
             speciality: speciality,
             maxPatientsPerDay: maxPatientsPerDay
         })
 
-        res.status(200).json({ success: 'true', message: 'registered successfully' })
+        console.log('hiiiiiiiii')
+        res.status(200).json({ success: 'true', message: 'registered successfully', token: generateAccessToken(doctor.id, doctor.name) })
 
     } catch (err) {
         res.status(500).json({ success: 'false', error: err })
     }
 }
+
+
 
 
 exports.getDoctorsList = async (req, res, next) => {
@@ -66,8 +83,7 @@ exports.getMyPatients = async (req, res, next) => {
 
     try {
 
-        const doctorId=req.query.doctorId;
-        const doctor = await Doctor.findByPk(doctorId)
+        const doctor = req.doctor;
 
         const patients = await doctor.getAppointments(
             {

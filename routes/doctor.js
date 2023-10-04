@@ -1,15 +1,19 @@
 const express=require('express')
 const router=express.Router();
 const doctorControllers=require('../controllers/doctor')
+const authentication=require('../middlewares/authentication')
 
+//route for doctor registration
+router.post('/api/doctor/register', authentication.userAuthentication,doctorControllers.postDoctorRegistration)
 
-router.post('/api/doctor/register',doctorControllers.postDoctorRegistration)
+//route for getting doctors list
+router.get('/api/doctor/list',authentication.userAuthentication,doctorControllers.getDoctorsList)
 
-router.get('/api/doctor/list',doctorControllers.getDoctorsList)
+//route for getting doctor's patients
+router.get('/api/doctor/my-patients', authentication.doctorAuthentication, doctorControllers.getMyPatients)
 
-router.get('/api/doctor/my-patients',doctorControllers.getMyPatients)
-
-router.get('/api/doctor/:doctorId',doctorControllers.getDoctorDetails)
+//route for getting detailis of doctor
+router.get('/api/doctor/:doctorId',authentication.userAuthentication,doctorControllers.getDoctorDetails)
 
 
 module.exports=router;
